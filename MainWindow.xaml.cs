@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace PrintPusher
 {
@@ -101,25 +105,25 @@ namespace PrintPusher
                 var heightText = HeightTextBox?.Text?.Trim() ?? string.Empty;
                 var autoInc = AutoIncrementCheckBox?.IsChecked == true;
 
-                // Validate width/height (in mm)
-                if (!int.TryParse(widthText, out var widthMm) || widthMm <= 0)
+                // Validate width/height (in inches)
+                if (!double.TryParse(widthText, out var widthInches) || widthInches <= 0)
                 {
                     StatusLabel.Content = "Invalid width";
                     Console.WriteLine("Invalid width: " + widthText);
                     return;
                 }
 
-                if (!int.TryParse(heightText, out var heightMm) || heightMm <= 0)
+                if (!double.TryParse(heightText, out var heightInches) || heightInches <= 0)
                 {
                     StatusLabel.Content = "Invalid height";
                     Console.WriteLine("Invalid height: " + heightText);
                     return;
                 }
 
-                // Convert mm to dots @203 dpi
+                // Convert inches to dots @203 dpi
                 const double dpi = 203.0;
-                var widthDots = (int)(widthMm * dpi / 25.4);
-                var heightDots = (int)(heightMm * dpi / 25.4);
+                var widthDots = (int)(widthInches * dpi);
+                var heightDots = (int)(heightInches * dpi);
 
                 var zplBuilder = new StringBuilder();
 
@@ -132,7 +136,7 @@ namespace PrintPusher
                         return;
                     }
 
-                    var labelZpl = BuildSingleLabelZpl(barcodeInput, textInput, widthDots, lengthDots, _currentRotation);
+                    var labelZpl = GenerateBuilderZpl(barcodeInput, textInput, widthDots, heightDots, _currentRotation);
                     zplBuilder.Append(labelZpl);
                 }
                 else
@@ -164,7 +168,7 @@ namespace PrintPusher
                             human = textInput + " " + value;
                         }
 
-                        var labelZpl = BuildSingleLabelZpl(value, human, widthDots, heightDots, _currentRotation);
+                        var labelZpl = GenerateBuilderZpl(value, human, widthDots, heightDots, _currentRotation);
                         zplBuilder.Append(labelZpl);
                     }
                 }
@@ -244,6 +248,160 @@ namespace PrintPusher
             RotationLabel.Content = $"Rotation: {_currentRotation}°";
         }
 
+        private void UpdatePreviewAndZpl()
+        {
+            try
+            {
+                var widthText = WidthTextBox?.Text?.Trim() ?? string.Empty;
+                var heightText = HeightTextBox?.Text?.Trim() ?? string.Empty;
+                var barcodeInput = BarcodeTextBox?.Text?.Trim() ?? string.Empty;
+                var textInput = TextTextBox?.Text?.Trim() ?? string.Empty;
+
+                // Try to parse dimensions
+                if (!double.TryParse(widthText, out var widthInches) || widthInches <= 0)
+                {
+                    PreviewCanvas.Children.Clear();
+                    return;
+                }
+
+                if (!double.TryParse(heightText, out var heightInches) || heightInches <= 0)
+                {
+                    PreviewCanvas.Children.Clear();
+                    return;
+                }
+
+                // Convert inches to dots @203 dpi
+                const double dpi = 203.0;
+                var widthDots = (int)(widthInches * dpi);
+                var heightDots = (int)(heightInches * dpi);
+
+                // Generate ZPL
+                string zpl = GenerateBuilderZpl(barcodeInput, textInput, widthDots, heightDots, _currentRotation);
+                RawZplTextBox.Text = zpl;
+
+                // Draw preview
+                DrawPreview(widthInches, heightInches, _currentRotation);
+            }
+            catch
+            {
+                PreviewCanvas.Children.Clear();
+            }
+        }
+
+        private void DrawPreview(double widthInches, double heightInches, int rotation)
+        {
+            PreviewCanvas.Children.Clear();
+
+            if (widthInches <= 0 || heightInches <= 0)
+                return;
+
+            // Scale to fit canvas
+            var canvasWidth = PreviewCanvas.ActualWidth > 0 ? PreviewCanvas.ActualWidth : 300;
+            var canvasHeight = PreviewCanvas.ActualHeight > 0 ? PreviewCanvas.ActualHeight : 200;
+
+            double scaleWidth = canvasWidth / widthInches;
+            double scaleHeight = canvasHeight / heightInches;
+            double scale = Math.Min(scaleWidth, scaleHeight) * 0.9; // 90% to leave margin
+
+            double displayWidth = widthInches * scale;
+            double displayHeight = heightInches * scale;
+
+            // Center in canvas
+            double offsetX = (canvasWidth - displayWidth) / 2;
+            double offsetY = (canvasHeight - displayHeight) / 2;
+
+            // Draw label border
+            var labelRect = new Rectangle
+            {
+                Width = displayWidth,
+                Height = displayHeight,
+                Stroke = Brushes.Black,
+                StrokeThickness = 1,
+                Fill = Brushes.White
+            };
+            Canvas.SetLeft(labelRect, offsetX);
+            Canvas.SetTop(labelRect, offsetY);
+            PreviewCanvas.Children.Add(labelRect);
+
+            // Calculate content area (with padding)
+            double padPercent = 0.08; // 8% padding
+            double contentX = offsetX + displayWidth * padPercent;
+            double contentY = offsetY + displayHeight * padPercent;
+            double contentWidth = displayWidth * (1 - 2 * padPercent);
+            double contentHeight = displayHeight * (1 - 2 * padPercent);
+
+            // Draw approximate barcode area (70% of content)
+            double barcodeHeight = contentHeight * 0.7;
+            var barcodeRect = new Rectangle
+            {
+                Width = contentWidth,
+                Height = barcodeHeight,
+                Stroke = Brushes.Gray,
+                StrokeThickness = 1,
+                Fill = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)) // Light gray fill
+            };
+            Canvas.SetLeft(barcodeRect, contentX);
+            Canvas.SetTop(barcodeRect, contentY);
+            PreviewCanvas.Children.Add(barcodeRect);
+
+            // Add barcode label
+            var barcodeLabel = new TextBlock
+            {
+                Text = "Barcode",
+                FontSize = 10,
+                Foreground = Brushes.Gray
+            };
+            Canvas.SetLeft(barcodeLabel, contentX + 4);
+            Canvas.SetTop(barcodeLabel, contentY + 4);
+            PreviewCanvas.Children.Add(barcodeLabel);
+
+            // Draw approximate text area (below barcode)
+            double textY = contentY + barcodeHeight + 5;
+            double textHeight = contentHeight * 0.25;
+            var textRect = new Rectangle
+            {
+                Width = contentWidth,
+                Height = textHeight,
+                Stroke = Brushes.Gray,
+                StrokeThickness = 1,
+                Fill = new SolidColorBrush(Color.FromArgb(20, 0, 0, 0)) // Very light gray fill
+            };
+            Canvas.SetLeft(textRect, contentX);
+            Canvas.SetTop(textRect, textY);
+            PreviewCanvas.Children.Add(textRect);
+
+            // Add text label
+            var textLabel = new TextBlock
+            {
+                Text = "Text",
+                FontSize = 10,
+                Foreground = Brushes.Gray
+            };
+            Canvas.SetLeft(textLabel, contentX + 4);
+            Canvas.SetTop(textLabel, textY + 4);
+            PreviewCanvas.Children.Add(textLabel);
+
+            // Draw rotation indicator if not 0°
+            if (rotation != 0)
+            {
+                var rotLabel = new TextBlock
+                {
+                    Text = $"{rotation}°",
+                    FontSize = 12,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.Blue
+                };
+                Canvas.SetLeft(rotLabel, offsetX + displayWidth - 40);
+                Canvas.SetTop(rotLabel, offsetY + 5);
+                PreviewCanvas.Children.Add(rotLabel);
+            }
+        }
+
+        private void InputChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdatePreviewAndZpl();
+        }
+
         private string EscapeZpl(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
@@ -251,15 +409,14 @@ namespace PrintPusher
             return input.Replace("\r", " ").Replace("\n", " ");
         }
 
-        private string BuildSingleLabelZpl(string barcodeValue, string humanText, int widthDots, int lengthDots, int rotation)
+        private string GenerateBuilderZpl(string barcodeValue, string humanText, int widthDots, int heightDots, int rotation)
         {
-            // Improved ZPL for better scaling and rotation
+            // Generate ZPL with optimal layout for the given dimensions and rotation
             var b = new StringBuilder();
 
-            // Start label
             b.AppendLine("^XA");
 
-            // Set default field orientation based on rotation
+            // Set field orientation based on rotation
             char fwOrientation;
             switch (rotation)
             {
@@ -271,41 +428,60 @@ namespace PrintPusher
             }
             b.AppendLine($"^FW{fwOrientation}");
 
-            // Set label width and length
+            // Set label dimensions
             b.AppendLine($"^PW{widthDots}");
-            b.AppendLine($"^LL{lengthDots}");
+            b.AppendLine($"^LL{heightDots}");
 
-            // Calculate usable area with padding
+            // Calculate layout for this orientation
             const int padding = 20; // dots
-            var usableWidth = widthDots - 2 * padding;
-            var usableLength = lengthDots - 2 * padding;
+            int usableWidth = widthDots - 2 * padding;
+            int usableHeight = heightDots - 2 * padding;
 
-            // Barcode height: take most of the length, but leave room for text
-            var barcodeHeight = (int)(usableLength * 0.7); // 70% of usable length
-            var textHeight = 30; // fixed text height
-            var spacing = 10;
+            // Determine if label is wide or tall based on aspect ratio
+            bool isWide = widthDots > heightDots;
 
-            // Position barcode at top-left of usable area
-            var barcodeX = padding;
-            var barcodeY = padding;
+            if (isWide)
+            {
+                // For wide labels (like 4x6): barcode on left, text on top-right or stacked
+                int barcodeWidth = (int)(usableWidth * 0.65);
+                int barcodeHeight = usableHeight - 40;
+                int barcodeX = padding;
+                int barcodeY = padding + 20;
 
-            // Text below barcode
-            var textX = padding;
-            var textY = barcodeY + barcodeHeight + spacing;
+                // Barcode
+                b.AppendLine($"^FO{barcodeX},{barcodeY}");
+                b.AppendLine($"^BCN,{barcodeHeight},Y,N,N");
+                b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
-            // Orientation for barcode: N for normal, but since rotation is global, use N
-            char barcodeOrientation = 'N';
+                // Text area on the right
+                int textX = padding + barcodeWidth + 10;
+                int textY = padding;
+                int textWidth = usableWidth - barcodeWidth - 10;
 
-            b.AppendLine($"^FO{barcodeX},{barcodeY}");
-            b.AppendLine($"^BC{barcodeOrientation},{barcodeHeight},Y,N,N");
-            b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
+                b.AppendLine($"^FO{textX},{textY}");
+                b.AppendLine($"^A0N,24,20");
+                b.AppendLine($"^FD{EscapeZpl(humanText)}^FS");
+            }
+            else
+            {
+                // For tall labels (like 3x2 or square): barcode on top, text below
+                int barcodeHeight = (int)(usableHeight * 0.65);
+                int barcodeX = padding;
+                int barcodeY = padding;
 
-            // Human readable text
-            b.AppendLine($"^FO{textX},{textY}");
-            b.AppendLine($"^A0N,{textHeight},{textHeight}");
-            b.AppendLine($"^FD{EscapeZpl(humanText)}^FS");
+                b.AppendLine($"^FO{barcodeX},{barcodeY}");
+                b.AppendLine($"^BCN,{barcodeHeight},Y,N,N");
+                b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
-            // End label
+                // Text below barcode
+                int textX = padding;
+                int textY = padding + barcodeHeight + 15;
+
+                b.AppendLine($"^FO{textX},{textY}");
+                b.AppendLine($"^A0N,20,18");
+                b.AppendLine($"^FD{EscapeZpl(humanText)}^FS");
+            }
+
             b.AppendLine("^XZ");
 
             return b.ToString();

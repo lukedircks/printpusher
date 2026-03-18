@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PrintPusher"
-        Width="760" Height="520"
-        MinWidth="520" MinHeight="380"
+        Width="900" Height="700"
+        MinWidth="600" MinHeight="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
 
@@ -62,7 +62,6 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
 
                                     <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Barcode Value</Label>
@@ -71,30 +70,30 @@
                                     <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">Human Readable Text</Label>
                                     <TextBox Grid.Row="1" Grid.Column="1" Name="TextTextBox" Width="380" TextChanged="InputChanged" />
 
-                                    <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Width</Label>
-                                    <TextBox Grid.Row="2" Grid.Column="1" Name="WidthTextBox" Width="100" TextChanged="InputChanged" />
+                                    <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Width (inches)</Label>
+                                    <TextBox Grid.Row="2" Grid.Column="1" Name="WidthTextBox" Width="100" Text="2" TextChanged="InputChanged" />
 
-                                    <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Height</Label>
-                                    <TextBox Grid.Row="3" Grid.Column="1" Name="HeightTextBox" Width="100" TextChanged="InputChanged" />
+                                    <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Height (inches)</Label>
+                                    <TextBox Grid.Row="3" Grid.Column="1" Name="HeightTextBox" Width="100" Text="3" TextChanged="InputChanged" />
 
-                                    <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center">Rotation</Label>
-                                    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
-                                        <Button Name="RotateLeftButton" Content="Rotate Left" Width="90" Margin="0,0,8,0" Click="RotateLeftButton_Click" />
-                                        <Button Name="RotateRightButton" Content="Rotate Right" Width="90" Margin="0,0,8,0" Click="RotateRightButton_Click" />
+                                    <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Top">Rotation</Label>
+                                    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="RotateLeftButton" Content="Rotate Left" Width="90" Margin="0,0,8,0" Padding="4,2" Click="RotateLeftButton_Click" />
+                                        <Button Name="RotateRightButton" Content="Rotate Right" Width="90" Margin="0,0,8,0" Padding="4,2" Click="RotateRightButton_Click" />
                                         <Label Name="RotationLabel" Content="Rotation: 0°" VerticalAlignment="Center" />
                                     </StackPanel>
 
                                     <Label Grid.Row="5" Grid.Column="0" />
-                                    <CheckBox Grid.Row="5" Grid.Column="1" Name="AutoIncrementCheckBox" Content="Auto Increment" />
+                                    <CheckBox Grid.Row="5" Grid.Column="1" Name="AutoIncrementCheckBox" Content="Auto Increment" VerticalAlignment="Center" />
 
                                     <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center">Start Value</Label>
-                                    <TextBox Grid.Row="6" Grid.Column="1" Name="StartValueTextBox" Width="100" TextChanged="InputChanged" />
+                                    <TextBox Grid.Row="6" Grid.Column="1" Name="StartValueTextBox" Width="100" Text="1" TextChanged="InputChanged" />
 
                                     <Label Grid.Row="7" Grid.Column="0" VerticalAlignment="Center">Count</Label>
-                                    <TextBox Grid.Row="7" Grid.Column="1" Name="CountTextBox" Width="100" TextChanged="InputChanged" />
+                                    <TextBox Grid.Row="7" Grid.Column="1" Name="CountTextBox" Width="100" Text="1" TextChanged="InputChanged" />
 
-                                    <Label Grid.Row="8" Grid.Column="0" VerticalAlignment="Center">Preview</Label>
-                                    <Border Grid.Row="8" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Width="200" Height="100" HorizontalAlignment="Left">
+                                    <Label Grid.Row="8" Grid.Column="0" VerticalAlignment="Top">Preview</Label>
+                                    <Border Grid.Row="8" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Width="300" Height="200" HorizontalAlignment="Left" Background="White">
                                         <Canvas Name="PreviewCanvas" Background="White" />
                                     </Border>
 
