@@ -17,6 +17,7 @@ namespace PrintPusher
         public MainWindow()
         {
             InitializeComponent();
+            Loaded += (_, _) => UpdatePreviewAndZpl();
         }
 
         private async void TestConnectionButton_Click(object sender, RoutedEventArgs e)
@@ -250,6 +251,10 @@ namespace PrintPusher
 
         private void UpdatePreviewAndZpl()
         {
+            // TextChanged can fire while XAML is still initializing controls.
+            if (!IsLoaded || PreviewCanvas == null || RawZplTextBox == null)
+                return;
+
             try
             {
                 var widthText = WidthTextBox?.Text?.Trim() ?? string.Empty;
@@ -284,7 +289,7 @@ namespace PrintPusher
             }
             catch
             {
-                PreviewCanvas.Children.Clear();
+                PreviewCanvas?.Children.Clear();
             }
         }
 
