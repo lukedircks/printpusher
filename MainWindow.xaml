@@ -1,0 +1,23 @@
+<Window x:Class="PrintPusher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PrintPusher" Height="200" Width="400">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Hello World"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+
+        <Button Grid.Row="1"
+                Content="Test Print"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,16"
+                Padding="12,4"
+                Click="TestPrint_Click" />
+    </Grid>
+</Window>
