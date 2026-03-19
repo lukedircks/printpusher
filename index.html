@@ -5,34 +5,45 @@
   <title>PrintPusher</title>
   <style>
     body {
-      font-family: Arial;
-      background: #111;
-      color: white;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: #ffffff;
       text-align: center;
-      padding-top: 100px;
+      padding-top: 120px;
+      margin: 0;
     }
 
     h1 {
       font-size: 48px;
+      margin-bottom: 10px;
     }
 
     p {
-      color: #ccc;
+      color: #bdbdbd;
+      font-size: 18px;
+      margin-bottom: 30px;
     }
 
     a {
       display: inline-block;
-      margin-top: 30px;
-      padding: 15px 30px;
+      padding: 15px 35px;
       background: #2ea44f;
       color: white;
       text-decoration: none;
       font-size: 20px;
       border-radius: 8px;
+      transition: 0.2s ease;
     }
 
     a:hover {
       background: #2c974b;
+      transform: translateY(-1px);
+    }
+
+    .version {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #777;
     }
   </style>
 </head>
@@ -41,9 +52,13 @@
   <h1>PrintPusher</h1>
   <p>Simple ZPL label generator + printer tool</p>
 
-  <a href="https://github.com/lukedircks/printpusher/releases/latest">
+  <a href="https://github.com/lukedircks/printpusher/releases/download/v1.0.0/printpusher.zip" download>
     Download Latest Version
   </a>
+
+  <div class="version">
+    Version 1.0.0
+  </div>
 
 </body>
 </html>
