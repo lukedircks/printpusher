@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PrintPusher"
         Width="520"
-        Height="580"
+        Height="520"
         MinWidth="520"
         MaxWidth="520"
-        MinHeight="580"
-        MaxHeight="580"
+        MinHeight="520"
+        MaxHeight="520"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
         SnapsToDevicePixels="True">
@@ -96,8 +96,6 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <Label Grid.Row="0" Grid.Column="0"
@@ -114,55 +112,26 @@
                                      MaxLength="256" />
 
                             <Label Grid.Row="1" Grid.Column="0"
-                                   Content="Human-_readable text:"
-                                   Target="{Binding ElementName=TextTextBox}"
+                                   Content="Label _size:"
+                                   Target="{Binding ElementName=LabelPresetComboBox}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Right"
                                    Margin="0,0,8,6"
                                    Padding="0" />
-                            <TextBox Grid.Row="1" Grid.Column="1"
-                                     Name="TextTextBox"
-                                     VerticalAlignment="Center"
-                                     Margin="0,0,0,6"
-                                     MaxLength="256" />
+                            <ComboBox Grid.Row="1" Grid.Column="1"
+                                      Name="LabelPresetComboBox"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,0,6"
+                                      MinWidth="120"
+                                      HorizontalAlignment="Left" />
 
                             <Label Grid.Row="2" Grid.Column="0"
-                                   Content="_Width (in):"
-                                   Target="{Binding ElementName=WidthTextBox}"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Right"
-                                   Margin="0,0,8,6"
-                                   Padding="0" />
-                            <TextBox Grid.Row="2" Grid.Column="1"
-                                     Name="WidthTextBox"
-                                     Width="52"
-                                     HorizontalAlignment="Left"
-                                     VerticalAlignment="Center"
-                                     Text="2"
-                                     Margin="0,0,0,6" />
-
-                            <Label Grid.Row="3" Grid.Column="0"
-                                   Content="_Height (in):"
-                                   Target="{Binding ElementName=HeightTextBox}"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Right"
-                                   Margin="0,0,8,6"
-                                   Padding="0" />
-                            <TextBox Grid.Row="3" Grid.Column="1"
-                                     Name="HeightTextBox"
-                                     Width="52"
-                                     HorizontalAlignment="Left"
-                                     VerticalAlignment="Center"
-                                     Text="3"
-                                     Margin="0,0,0,6" />
-
-                            <Label Grid.Row="4" Grid.Column="0"
                                    Content="_Rotation:"
                                    VerticalAlignment="Top"
                                    HorizontalAlignment="Right"
                                    Margin="0,4,8,0"
                                    Padding="0" />
-                            <Border Grid.Row="4" Grid.Column="1"
+                            <Border Grid.Row="2" Grid.Column="1"
                                     BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
                                     BorderThickness="1"
                                     CornerRadius="0"
@@ -191,20 +160,20 @@
                                 </StackPanel>
                             </Border>
 
-                            <CheckBox Grid.Row="5" Grid.Column="1"
+                            <CheckBox Grid.Row="3" Grid.Column="1"
                                       Name="AutoIncrementCheckBox"
                                       Content="Auto increment barcode"
                                       VerticalAlignment="Center"
                                       Margin="0,0,0,6" />
 
-                            <Label Grid.Row="6" Grid.Column="0"
+                            <Label Grid.Row="4" Grid.Column="0"
                                    Content="_Start value:"
                                    Target="{Binding ElementName=StartValueTextBox}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Right"
                                    Margin="0,0,8,6"
                                    Padding="0" />
-                            <TextBox Grid.Row="6" Grid.Column="1"
+                            <TextBox Grid.Row="4" Grid.Column="1"
                                      Name="StartValueTextBox"
                                      Width="72"
                                      HorizontalAlignment="Left"
@@ -212,14 +181,14 @@
                                      Text="1"
                                      Margin="0,0,0,6" />
 
-                            <Label Grid.Row="7" Grid.Column="0"
+                            <Label Grid.Row="5" Grid.Column="0"
                                    Content="_Count:"
                                    Target="{Binding ElementName=CountTextBox}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Right"
                                    Margin="0,0,8,8"
                                    Padding="0" />
-                            <TextBox Grid.Row="7" Grid.Column="1"
+                            <TextBox Grid.Row="5" Grid.Column="1"
                                      Name="CountTextBox"
                                      Width="52"
                                      HorizontalAlignment="Left"
@@ -227,7 +196,7 @@
                                      Text="1"
                                      Margin="0,0,0,8" />
 
-                            <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                            <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
                                         Orientation="Horizontal"
                                         HorizontalAlignment="Right"
                                         Margin="0,4,0,0">

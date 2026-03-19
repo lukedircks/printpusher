@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,11 +10,44 @@ namespace PrintPusher
 {
     public partial class MainWindow : Window
     {
-        private int _currentRotation = 0; // 0, 90, 180, 270
+        /// <summary>
+        /// Maps a preset name (e.g. "2x3") to label width and height in inches.
+        /// </summary>
+        private sealed class LabelPreset
+        {
+            public LabelPreset(string displayName, double widthInches, double heightInches)
+            {
+                DisplayName = displayName;
+                WidthInches = widthInches;
+                HeightInches = heightInches;
+            }
+
+            public string DisplayName { get; }
+            public double WidthInches { get; }
+            public double HeightInches { get; }
+        }
+
+        /// <summary>
+        /// All label size presets. Order matters: first item is the default (2x3).
+        /// </summary>
+        private static readonly IReadOnlyList<LabelPreset> LabelPresets = new List<LabelPreset>
+        {
+            new LabelPreset("2x3", 2, 3),
+            new LabelPreset("3x2", 3, 2),
+            new LabelPreset("4x6", 4, 6),
+            new LabelPreset("6x4", 6, 4),
+            new LabelPreset("4x4", 4, 4),
+            new LabelPreset("2x1", 2, 1),
+        };
+
+        private int _currentRotation; // 0, 90, 180, 270
 
         public MainWindow()
         {
             InitializeComponent();
+            LabelPresetComboBox.ItemsSource = LabelPresets;
+            LabelPresetComboBox.DisplayMemberPath = nameof(LabelPreset.DisplayName);
+            LabelPresetComboBox.SelectedIndex = 0;
         }
 
         private async void TestConnectionButton_Click(object sender, RoutedEventArgs e)
@@ -49,10 +83,8 @@ namespace PrintPusher
 
                 if (finished == connectTask)
                 {
-                    // Observe any exceptions
                     await connectTask.ConfigureAwait(false);
 
-                    // Back on UI thread to update status
                     await Dispatcher.InvokeAsync(() =>
                     {
                         StatusLabel.Content = $"Connection successful to {host}:{port}";
@@ -61,8 +93,7 @@ namespace PrintPusher
                 }
                 else
                 {
-                    // timeout
-                    try { client.Close(); } catch { }
+                    try { client.Close(); } catch { /* ignore */ }
                     await Dispatcher.InvokeAsync(() =>
                     {
                         StatusLabel.Content = "Connection timed out";
@@ -97,30 +128,18 @@ namespace PrintPusher
             try
             {
                 var barcodeInput = BarcodeTextBox?.Text?.Trim() ?? string.Empty;
-                var textInput = TextTextBox?.Text?.Trim() ?? string.Empty;
-                var widthText = WidthTextBox?.Text?.Trim() ?? string.Empty;
-                var heightText = HeightTextBox?.Text?.Trim() ?? string.Empty;
                 var autoInc = AutoIncrementCheckBox?.IsChecked == true;
 
-                // Validate width/height (in inches)
-                if (!double.TryParse(widthText, out var widthInches) || widthInches <= 0)
+                if (LabelPresetComboBox?.SelectedItem is not LabelPreset preset)
                 {
-                    StatusLabel.Content = "Invalid width";
-                    Console.WriteLine("Invalid width: " + widthText);
+                    StatusLabel.Content = "Select a label size";
+                    Console.WriteLine("Select a label size");
                     return;
                 }
 
-                if (!double.TryParse(heightText, out var heightInches) || heightInches <= 0)
-                {
-                    StatusLabel.Content = "Invalid height";
-                    Console.WriteLine("Invalid height: " + heightText);
-                    return;
-                }
-
-                // Convert inches to dots @203 dpi
                 const double dpi = 203.0;
-                var widthDots = (int)(widthInches * dpi);
-                var heightDots = (int)(heightInches * dpi);
+                var widthDots = (int)(preset.WidthInches * dpi);
+                var heightDots = (int)(preset.HeightInches * dpi);
 
                 var zplBuilder = new StringBuilder();
 
@@ -133,8 +152,7 @@ namespace PrintPusher
                         return;
                     }
 
-                    var labelZpl = GenerateBuilderZpl(barcodeInput, textInput, widthDots, heightDots, _currentRotation);
-                    zplBuilder.Append(labelZpl);
+                    zplBuilder.Append(GenerateBuilderZpl(barcodeInput, widthDots, heightDots, _currentRotation));
                 }
                 else
                 {
@@ -155,28 +173,15 @@ namespace PrintPusher
                     for (var i = 0; i < count; i++)
                     {
                         var value = (start + i).ToString();
-                        string human;
-                        if (string.IsNullOrWhiteSpace(textInput))
-                        {
-                            human = value;
-                        }
-                        else
-                        {
-                            human = textInput + " " + value;
-                        }
-
-                        var labelZpl = GenerateBuilderZpl(value, human, widthDots, heightDots, _currentRotation);
-                        zplBuilder.Append(labelZpl);
+                        zplBuilder.Append(GenerateBuilderZpl(value, widthDots, heightDots, _currentRotation));
                     }
                 }
 
                 var finalZpl = zplBuilder.ToString();
 
                 RawZplTextBox.Text = finalZpl;
-                // Switch to Raw ZPL tab (index 1)
-                try { MainTabControl.SelectedIndex = 1; } catch { }
+                try { MainTabControl.SelectedIndex = 1; } catch { /* ignore */ }
 
-                // Send the generated ZPL to the printer
                 GeneratePrintButton.IsEnabled = false;
                 StatusLabel.Content = "Sending generated ZPL...";
                 Console.WriteLine("Sending generated ZPL...");
@@ -185,7 +190,7 @@ namespace PrintPusher
 
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    StatusLabel.Content = result.Success ? result.Message : result.Message;
+                    StatusLabel.Content = result.Message;
                     Console.WriteLine(result.Message);
                     GeneratePrintButton.IsEnabled = true;
                 });
@@ -220,7 +225,7 @@ namespace PrintPusher
 
             await Dispatcher.InvokeAsync(() =>
             {
-                StatusLabel.Content = result.Success ? result.Message : result.Message;
+                StatusLabel.Content = result.Message;
                 Console.WriteLine(result.Message);
                 SendRawZplButton.IsEnabled = true;
             });
@@ -243,88 +248,79 @@ namespace PrintPusher
             RotationLabel.Content = $"Rotation: {_currentRotation}°";
         }
 
-        private string EscapeZpl(string input)
+        private static string EscapeZpl(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
-            // Keep it simple: remove newlines and control characters
             return input.Replace("\r", " ").Replace("\n", " ");
         }
 
-        private string GenerateBuilderZpl(string barcodeValue, string humanText, int widthDots, int heightDots, int rotation)
+        /// <summary>
+        /// Builds ZPL for one label: Code 128 + one text line (same as barcode value). 203 dpi assumed in PW/LL.
+        /// </summary>
+        private static string GenerateBuilderZpl(string barcodeValue, int widthDots, int heightDots, int rotation)
         {
-            // Generate ZPL with optimal layout for the given dimensions and rotation
-            var b = new StringBuilder();
+            var humanReadable = barcodeValue;
 
+            var b = new StringBuilder();
             b.AppendLine("^XA");
 
-            // Set field orientation based on rotation
             char fwOrientation;
             switch (rotation)
             {
-                case 0: fwOrientation = 'N'; break; // Normal
-                case 90: fwOrientation = 'R'; break; // Rotated 90
-                case 180: fwOrientation = 'I'; break; // Inverted
-                case 270: fwOrientation = 'B'; break; // Rotated 270
+                case 0: fwOrientation = 'N'; break;
+                case 90: fwOrientation = 'R'; break;
+                case 180: fwOrientation = 'I'; break;
+                case 270: fwOrientation = 'B'; break;
                 default: fwOrientation = 'N'; break;
             }
             b.AppendLine($"^FW{fwOrientation}");
 
-            // Set label dimensions
             b.AppendLine($"^PW{widthDots}");
             b.AppendLine($"^LL{heightDots}");
 
-            // Calculate layout for this orientation
-            const int padding = 20; // dots
-            int usableWidth = widthDots - 2 * padding;
-            int usableHeight = heightDots - 2 * padding;
+            const int padding = 20;
+            var usableWidth = widthDots - 2 * padding;
+            var usableHeight = heightDots - 2 * padding;
+            var isWide = widthDots > heightDots;
 
-            // Determine if label is wide or tall based on aspect ratio
-            bool isWide = widthDots > heightDots;
-
+            // N,N,N: no extra HRI from ^BC so exactly one human-readable line via ^A0
             if (isWide)
             {
-                // For wide labels (like 4x6): barcode on left, text on top-right or stacked
-                int barcodeWidth = (int)(usableWidth * 0.65);
-                int barcodeHeight = usableHeight - 40;
-                int barcodeX = padding;
-                int barcodeY = padding + 20;
+                var barcodeWidth = (int)(usableWidth * 0.65);
+                var barcodeHeight = usableHeight - 40;
+                var barcodeX = padding;
+                var barcodeY = padding + 20;
 
-                // Barcode
                 b.AppendLine($"^FO{barcodeX},{barcodeY}");
-                b.AppendLine($"^BCN,{barcodeHeight},Y,N,N");
+                b.AppendLine($"^BCN,{barcodeHeight},N,N,N");
                 b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
-                // Text area on the right
-                int textX = padding + barcodeWidth + 10;
-                int textY = padding;
-                int textWidth = usableWidth - barcodeWidth - 10;
+                var textX = padding + barcodeWidth + 10;
+                var textY = padding;
 
                 b.AppendLine($"^FO{textX},{textY}");
-                b.AppendLine($"^A0N,24,20");
-                b.AppendLine($"^FD{EscapeZpl(humanText)}^FS");
+                b.AppendLine("^A0N,24,20");
+                b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
             }
             else
             {
-                // For tall labels (like 3x2 or square): barcode on top, text below
-                int barcodeHeight = (int)(usableHeight * 0.65);
-                int barcodeX = padding;
-                int barcodeY = padding;
+                var barcodeHeight = (int)(usableHeight * 0.65);
+                var barcodeX = padding;
+                var barcodeY = padding;
 
                 b.AppendLine($"^FO{barcodeX},{barcodeY}");
-                b.AppendLine($"^BCN,{barcodeHeight},Y,N,N");
+                b.AppendLine($"^BCN,{barcodeHeight},N,N,N");
                 b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
-                // Text below barcode
-                int textX = padding;
-                int textY = padding + barcodeHeight + 15;
+                var textX = padding;
+                var textY = padding + barcodeHeight + 15;
 
                 b.AppendLine($"^FO{textX},{textY}");
-                b.AppendLine($"^A0N,20,18");
-                b.AppendLine($"^FD{EscapeZpl(humanText)}^FS");
+                b.AppendLine("^A0N,20,18");
+                b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
             }
 
             b.AppendLine("^XZ");
-
             return b.ToString();
         }
 
@@ -353,11 +349,10 @@ namespace PrintPusher
                 var finished = await Task.WhenAny(connectTask, timeoutTask).ConfigureAwait(false);
                 if (finished != connectTask)
                 {
-                    try { client.Close(); } catch { }
+                    try { client.Close(); } catch { /* ignore */ }
                     return (false, "Send timed out");
                 }
 
-                // observe exceptions
                 await connectTask.ConfigureAwait(false);
 
                 using var networkStream = client.GetStream();
@@ -367,7 +362,7 @@ namespace PrintPusher
                 var finishedWrite = await Task.WhenAny(writeTask, Task.Delay(TimeSpan.FromSeconds(10))).ConfigureAwait(false);
                 if (finishedWrite != writeTask)
                 {
-                    try { client.Close(); } catch { }
+                    try { client.Close(); } catch { /* ignore */ }
                     return (false, "Send timed out");
                 }
 
@@ -377,20 +372,20 @@ namespace PrintPusher
                 {
                     await networkStream.FlushAsync().ConfigureAwait(false);
                 }
-                catch { }
+                catch { /* ignore */ }
 
-                try { client.Close(); } catch { }
+                try { client.Close(); } catch { /* ignore */ }
 
                 return (true, $"Send successful to {host}:{port}");
             }
             catch (SocketException ex)
             {
-                try { client.Close(); } catch { }
+                try { client.Close(); } catch { /* ignore */ }
                 return (false, $"Send failed: {ex.Message}");
             }
             catch (Exception ex)
             {
-                try { client.Close(); } catch { }
+                try { client.Close(); } catch { /* ignore */ }
                 return (false, $"Send failed: {ex.Message}");
             }
         }
