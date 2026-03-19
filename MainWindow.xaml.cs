@@ -40,8 +40,6 @@ namespace PrintPusher
             new LabelPreset("2x1", 2, 1),
         };
 
-        private int _currentRotation; // 0, 90, 180, 270
-
         public MainWindow()
         {
             InitializeComponent();
@@ -127,8 +125,10 @@ namespace PrintPusher
         {
             try
             {
+                // Always read current UI state and rebuild ZPL from scratch
                 var barcodeInput = BarcodeTextBox?.Text?.Trim() ?? string.Empty;
                 var autoInc = AutoIncrementCheckBox?.IsChecked == true;
+                var rotation = GetSelectedRotationDegrees();
 
                 if (LabelPresetComboBox?.SelectedItem is not LabelPreset preset)
                 {
@@ -152,7 +152,7 @@ namespace PrintPusher
                         return;
                     }
 
-                    zplBuilder.Append(GenerateBuilderZpl(barcodeInput, widthDots, heightDots, _currentRotation));
+                    zplBuilder.Append(GenerateBuilderZpl(barcodeInput, widthDots, heightDots, rotation));
                 }
                 else
                 {
@@ -173,7 +173,7 @@ namespace PrintPusher
                     for (var i = 0; i < count; i++)
                     {
                         var value = (start + i).ToString();
-                        zplBuilder.Append(GenerateBuilderZpl(value, widthDots, heightDots, _currentRotation));
+                        zplBuilder.Append(GenerateBuilderZpl(value, widthDots, heightDots, rotation));
                     }
                 }
 
@@ -231,21 +231,64 @@ namespace PrintPusher
             });
         }
 
-        private void RotateLeftButton_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Reads the currently selected rotation from the UI (source of truth). Returns 0, 90, 180, or 270.
+        /// </summary>
+        private int GetSelectedRotationDegrees()
         {
-            _currentRotation = (_currentRotation - 90 + 360) % 360;
-            UpdateRotationLabel();
+            if (Rotation0RadioButton?.IsChecked == true) return 0;
+            if (Rotation90RadioButton?.IsChecked == true) return 90;
+            if (Rotation180RadioButton?.IsChecked == true) return 180;
+            if (Rotation270RadioButton?.IsChecked == true) return 270;
+            return 0;
         }
 
-        private void RotateRightButton_Click(object sender, RoutedEventArgs e)
+        private void RotationRadioButton_Checked(object sender, RoutedEventArgs e)
         {
-            _currentRotation = (_currentRotation + 90) % 360;
-            UpdateRotationLabel();
+            TryRefreshBuilderZpl();
         }
 
-        private void UpdateRotationLabel()
+        private void LabelPresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            RotationLabel.Content = $"Rotation: {_currentRotation}°";
+            TryRefreshBuilderZpl();
+        }
+
+        /// <summary>
+        /// If current Builder inputs are valid, regenerates ZPL from UI state and updates RawZplTextBox.
+        /// Fails quietly (no popups, no status noise) when inputs are incomplete.
+        /// </summary>
+        private void TryRefreshBuilderZpl()
+        {
+            if (LabelPresetComboBox?.SelectedItem is not LabelPreset preset)
+                return;
+
+            var rotation = GetSelectedRotationDegrees();
+            var autoInc = AutoIncrementCheckBox?.IsChecked == true;
+            const double dpi = 203.0;
+            var widthDots = (int)(preset.WidthInches * dpi);
+            var heightDots = (int)(preset.HeightInches * dpi);
+            var zplBuilder = new StringBuilder();
+
+            if (!autoInc)
+            {
+                var barcodeInput = BarcodeTextBox?.Text?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(barcodeInput))
+                    return;
+                zplBuilder.Append(GenerateBuilderZpl(barcodeInput, widthDots, heightDots, rotation));
+            }
+            else
+            {
+                if (!int.TryParse(StartValueTextBox?.Text?.Trim(), out var start) ||
+                    !int.TryParse(CountTextBox?.Text?.Trim(), out var count) || count < 1)
+                    return;
+                for (var i = 0; i < count; i++)
+                {
+                    var value = (start + i).ToString();
+                    zplBuilder.Append(GenerateBuilderZpl(value, widthDots, heightDots, rotation));
+                }
+            }
+
+            RawZplTextBox.Text = zplBuilder.ToString();
         }
 
         private static string EscapeZpl(string input)

@@ -123,42 +123,45 @@
                                       VerticalAlignment="Center"
                                       Margin="0,0,0,6"
                                       MinWidth="120"
-                                      HorizontalAlignment="Left" />
+                                      HorizontalAlignment="Left"
+                                      SelectionChanged="LabelPresetComboBox_SelectionChanged" />
 
                             <Label Grid.Row="2" Grid.Column="0"
                                    Content="_Rotation:"
-                                   VerticalAlignment="Top"
+                                   VerticalAlignment="Center"
                                    HorizontalAlignment="Right"
-                                   Margin="0,4,8,0"
+                                   Margin="0,0,8,6"
                                    Padding="0" />
-                            <Border Grid.Row="2" Grid.Column="1"
-                                    BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
-                                    BorderThickness="1"
-                                    CornerRadius="0"
-                                    Padding="8,6"
-                                    Margin="0,0,0,6"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Top">
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Name="RotateLeftButton"
-                                            Content="Rotate left"
-                                            MinWidth="88"
-                                            Padding="6,2"
-                                            Margin="0,0,6,0"
-                                            Click="RotateLeftButton_Click" />
-                                    <Button Name="RotateRightButton"
-                                            Content="Rotate right"
-                                            MinWidth="88"
-                                            Padding="6,2"
-                                            Margin="0,0,10,0"
-                                            Click="RotateRightButton_Click" />
-                                    <Label Name="RotationLabel"
-                                           Content="Rotation: 0°"
-                                           VerticalAlignment="Center"
-                                           Padding="4,0"
-                                           Margin="0" />
-                                </StackPanel>
-                            </Border>
+                            <StackPanel Grid.Row="2" Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,0,6">
+                                <RadioButton Name="Rotation0RadioButton"
+                                             Content="0°"
+                                             GroupName="RotationGroup"
+                                             IsChecked="True"
+                                             Margin="0,0,12,0"
+                                             VerticalAlignment="Center"
+                                             Checked="RotationRadioButton_Checked" />
+                                <RadioButton Name="Rotation90RadioButton"
+                                             Content="90°"
+                                             GroupName="RotationGroup"
+                                             Margin="0,0,12,0"
+                                             VerticalAlignment="Center"
+                                             Checked="RotationRadioButton_Checked" />
+                                <RadioButton Name="Rotation180RadioButton"
+                                             Content="180°"
+                                             GroupName="RotationGroup"
+                                             Margin="0,0,12,0"
+                                             VerticalAlignment="Center"
+                                             Checked="RotationRadioButton_Checked" />
+                                <RadioButton Name="Rotation270RadioButton"
+                                             Content="270°"
+                                             GroupName="RotationGroup"
+                                             Margin="0,0,0,0"
+                                             VerticalAlignment="Center"
+                                             Checked="RotationRadioButton_Checked" />
+                            </StackPanel>
 
                             <CheckBox Grid.Row="3" Grid.Column="1"
                                       Name="AutoIncrementCheckBox"
