@@ -298,25 +298,32 @@ namespace PrintPusher
         }
 
         /// <summary>
-        /// Builds ZPL for one label: Code 128 + one text line (same as barcode value). 203 dpi assumed in PW/LL.
+        /// Maps rotation degrees (0, 90, 180, 270) to ZPL orientation code used by ^BC and ^A0.
+        /// 0° -> N, 90° -> R, 180° -> I, 270° -> B.
+        /// </summary>
+        private static char GetZplOrientationForRotation(int rotationDegrees)
+        {
+            return rotationDegrees switch
+            {
+                0 => 'N',
+                90 => 'R',
+                180 => 'I',
+                270 => 'B',
+                _ => 'N'
+            };
+        }
+
+        /// <summary>
+        /// Builds ZPL for one label: Code 128 + one text line (same as barcode value).
+        /// Rotation is applied per element via ^BC and ^A0 orientation (no global ^FW).
         /// </summary>
         private static string GenerateBuilderZpl(string barcodeValue, int widthDots, int heightDots, int rotation)
         {
             var humanReadable = barcodeValue;
+            char orientation = GetZplOrientationForRotation(rotation);
 
             var b = new StringBuilder();
             b.AppendLine("^XA");
-
-            char fwOrientation;
-            switch (rotation)
-            {
-                case 0: fwOrientation = 'N'; break;
-                case 90: fwOrientation = 'R'; break;
-                case 180: fwOrientation = 'I'; break;
-                case 270: fwOrientation = 'B'; break;
-                default: fwOrientation = 'N'; break;
-            }
-            b.AppendLine($"^FW{fwOrientation}");
 
             b.AppendLine($"^PW{widthDots}");
             b.AppendLine($"^LL{heightDots}");
@@ -326,7 +333,7 @@ namespace PrintPusher
             var usableHeight = heightDots - 2 * padding;
             var isWide = widthDots > heightDots;
 
-            // N,N,N: no extra HRI from ^BC so exactly one human-readable line via ^A0
+            // Barcode and text use explicit orientation (^BCo, ^A0o); no global ^FW.
             if (isWide)
             {
                 var barcodeWidth = (int)(usableWidth * 0.65);
@@ -335,14 +342,14 @@ namespace PrintPusher
                 var barcodeY = padding + 20;
 
                 b.AppendLine($"^FO{barcodeX},{barcodeY}");
-                b.AppendLine($"^BCN,{barcodeHeight},N,N,N");
+                b.AppendLine($"^BC{orientation},{barcodeHeight},N,N,N");
                 b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
                 var textX = padding + barcodeWidth + 10;
                 var textY = padding;
 
                 b.AppendLine($"^FO{textX},{textY}");
-                b.AppendLine("^A0N,24,20");
+                b.AppendLine($"^A0{orientation},24,20");
                 b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
             }
             else
@@ -352,14 +359,14 @@ namespace PrintPusher
                 var barcodeY = padding;
 
                 b.AppendLine($"^FO{barcodeX},{barcodeY}");
-                b.AppendLine($"^BCN,{barcodeHeight},N,N,N");
+                b.AppendLine($"^BC{orientation},{barcodeHeight},N,N,N");
                 b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
                 var textX = padding;
                 var textY = padding + barcodeHeight + 15;
 
                 b.AppendLine($"^FO{textX},{textY}");
-                b.AppendLine("^A0N,20,18");
+                b.AppendLine($"^A0{orientation},20,18");
                 b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
             }
 
