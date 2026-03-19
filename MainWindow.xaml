@@ -2,122 +2,271 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="PrintPusher"
-        Width="900" Height="700"
-        MinWidth="600" MinHeight="500"
+        Width="520"
+        Height="580"
+        MinWidth="520"
+        MaxWidth="520"
+        MinHeight="580"
+        MaxHeight="580"
+        ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="CanResize">
+        SnapsToDevicePixels="True">
 
-    <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <DockPanel LastChildFill="True" Margin="10">
 
-        <!-- Centered container to constrain width -->
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center" MaxWidth="720" Width="Auto">
-            <GroupBox Header="Connection" Margin="0,0,0,8">
-                <Grid Margin="8">
+        <!-- Status: compact native-style bar -->
+        <Border DockPanel.Dock="Bottom"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                BorderThickness="0,1,0,0"
+                Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+                Padding="8,4"
+                Margin="0,8,0,0">
+            <Label Name="StatusLabel"
+                   Content="Ready"
+                   VerticalAlignment="Center"
+                   Padding="0"
+                   Margin="0"
+                   FontSize="12"
+                   Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
+        </Border>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Connection -->
+            <GroupBox Grid.Row="0" Header="Connection" Margin="0,0,0,8" Padding="10,8,10,10">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="220" />
-                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="132" />
+                        <ColumnDefinition Width="16" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="52" />
                         <ColumnDefinition Width="12" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-
-                    <Label Grid.Column="0" VerticalAlignment="Center" Margin="0,0,6,0">Printer IP</Label>
-                    <TextBox Grid.Column="1" Name="PrinterIpTextBox" VerticalAlignment="Center" Width="220" />
-
-                    <Label Grid.Column="3" VerticalAlignment="Center" Margin="6,0,6,0">Port</Label>
-                    <TextBox Grid.Column="4" Name="PortTextBox" VerticalAlignment="Center" Width="90" Text="9100" />
-
-                    <Button Grid.Column="6" Name="TestConnectionButton" Content="Test Connection" HorizontalAlignment="Left" Padding="8,4" Click="TestConnectionButton_Click" />
+                    <Label Grid.Column="0"
+                           Content="Printer _IP:"
+                           Target="{Binding ElementName=PrinterIpTextBox}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0"
+                           Padding="0" />
+                    <TextBox Grid.Column="1"
+                             Name="PrinterIpTextBox"
+                             VerticalAlignment="Center"
+                             MaxLength="64" />
+                    <Label Grid.Column="3"
+                           Content="Po_rt:"
+                           Target="{Binding ElementName=PortTextBox}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0"
+                           Padding="0" />
+                    <TextBox Grid.Column="4"
+                             Name="PortTextBox"
+                             VerticalAlignment="Center"
+                             Text="9100"
+                             MaxLength="5" />
+                    <Button Grid.Column="6"
+                            Name="TestConnectionButton"
+                            Content="Test Connection"
+                            Padding="10,2"
+                            MinWidth="100"
+                            Click="TestConnectionButton_Click" />
                 </Grid>
             </GroupBox>
-        </StackPanel>
 
-        <!-- Main work area -->
-        <StackPanel Grid.Row="1" HorizontalAlignment="Center" MaxWidth="720" Width="Auto">
-            <GroupBox Header="Work" Margin="0,0,0,8">
-                <Grid Margin="8">
-                    <TabControl Name="MainTabControl">
-                        <TabItem Header="Builder">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <Grid Margin="4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160" />
-                                        <ColumnDefinition Width="420" />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
+            <!-- Work area: tabs -->
+            <GroupBox Grid.Row="1" Header="Work" Padding="8,8,8,8">
+                <TabControl Name="MainTabControl" Margin="0" Padding="0">
+                    <TabItem Header="Builder" Padding="6,4">
+                        <Grid Margin="8,6,8,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="118" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                                    <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Barcode Value</Label>
-                                    <TextBox Grid.Row="0" Grid.Column="1" Name="BarcodeTextBox" Width="380" TextChanged="InputChanged" />
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Content="Barcode _value:"
+                                   Target="{Binding ElementName=BarcodeTextBox}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,8,6"
+                                   Padding="0" />
+                            <TextBox Grid.Row="0" Grid.Column="1"
+                                     Name="BarcodeTextBox"
+                                     VerticalAlignment="Center"
+                                     Margin="0,0,0,6"
+                                     MaxLength="256" />
 
-                                    <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">Human Readable Text</Label>
-                                    <TextBox Grid.Row="1" Grid.Column="1" Name="TextTextBox" Width="380" TextChanged="InputChanged" />
+                            <Label Grid.Row="1" Grid.Column="0"
+                                   Content="Human-_readable text:"
+                                   Target="{Binding ElementName=TextTextBox}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,8,6"
+                                   Padding="0" />
+                            <TextBox Grid.Row="1" Grid.Column="1"
+                                     Name="TextTextBox"
+                                     VerticalAlignment="Center"
+                                     Margin="0,0,0,6"
+                                     MaxLength="256" />
 
-                                    <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Width (inches)</Label>
-                                    <TextBox Grid.Row="2" Grid.Column="1" Name="WidthTextBox" Width="100" Text="2" TextChanged="InputChanged" />
+                            <Label Grid.Row="2" Grid.Column="0"
+                                   Content="_Width (in):"
+                                   Target="{Binding ElementName=WidthTextBox}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,8,6"
+                                   Padding="0" />
+                            <TextBox Grid.Row="2" Grid.Column="1"
+                                     Name="WidthTextBox"
+                                     Width="52"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="2"
+                                     Margin="0,0,0,6" />
 
-                                    <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Height (inches)</Label>
-                                    <TextBox Grid.Row="3" Grid.Column="1" Name="HeightTextBox" Width="100" Text="3" TextChanged="InputChanged" />
+                            <Label Grid.Row="3" Grid.Column="0"
+                                   Content="_Height (in):"
+                                   Target="{Binding ElementName=HeightTextBox}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,8,6"
+                                   Padding="0" />
+                            <TextBox Grid.Row="3" Grid.Column="1"
+                                     Name="HeightTextBox"
+                                     Width="52"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="3"
+                                     Margin="0,0,0,6" />
 
-                                    <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Top">Rotation</Label>
-                                    <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button Name="RotateLeftButton" Content="Rotate Left" Width="90" Margin="0,0,8,0" Padding="4,2" Click="RotateLeftButton_Click" />
-                                        <Button Name="RotateRightButton" Content="Rotate Right" Width="90" Margin="0,0,8,0" Padding="4,2" Click="RotateRightButton_Click" />
-                                        <Label Name="RotationLabel" Content="Rotation: 0°" VerticalAlignment="Center" />
-                                    </StackPanel>
+                            <Label Grid.Row="4" Grid.Column="0"
+                                   Content="_Rotation:"
+                                   VerticalAlignment="Top"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,4,8,0"
+                                   Padding="0" />
+                            <Border Grid.Row="4" Grid.Column="1"
+                                    BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                                    BorderThickness="1"
+                                    CornerRadius="0"
+                                    Padding="8,6"
+                                    Margin="0,0,0,6"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Name="RotateLeftButton"
+                                            Content="Rotate left"
+                                            MinWidth="88"
+                                            Padding="6,2"
+                                            Margin="0,0,6,0"
+                                            Click="RotateLeftButton_Click" />
+                                    <Button Name="RotateRightButton"
+                                            Content="Rotate right"
+                                            MinWidth="88"
+                                            Padding="6,2"
+                                            Margin="0,0,10,0"
+                                            Click="RotateRightButton_Click" />
+                                    <Label Name="RotationLabel"
+                                           Content="Rotation: 0°"
+                                           VerticalAlignment="Center"
+                                           Padding="4,0"
+                                           Margin="0" />
+                                </StackPanel>
+                            </Border>
 
-                                    <Label Grid.Row="5" Grid.Column="0" />
-                                    <CheckBox Grid.Row="5" Grid.Column="1" Name="AutoIncrementCheckBox" Content="Auto Increment" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="5" Grid.Column="1"
+                                      Name="AutoIncrementCheckBox"
+                                      Content="Auto increment barcode"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,0,6" />
 
-                                    <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center">Start Value</Label>
-                                    <TextBox Grid.Row="6" Grid.Column="1" Name="StartValueTextBox" Width="100" Text="1" TextChanged="InputChanged" />
+                            <Label Grid.Row="6" Grid.Column="0"
+                                   Content="_Start value:"
+                                   Target="{Binding ElementName=StartValueTextBox}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,8,6"
+                                   Padding="0" />
+                            <TextBox Grid.Row="6" Grid.Column="1"
+                                     Name="StartValueTextBox"
+                                     Width="72"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="1"
+                                     Margin="0,0,0,6" />
 
-                                    <Label Grid.Row="7" Grid.Column="0" VerticalAlignment="Center">Count</Label>
-                                    <TextBox Grid.Row="7" Grid.Column="1" Name="CountTextBox" Width="100" Text="1" TextChanged="InputChanged" />
+                            <Label Grid.Row="7" Grid.Column="0"
+                                   Content="_Count:"
+                                   Target="{Binding ElementName=CountTextBox}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,8,8"
+                                   Padding="0" />
+                            <TextBox Grid.Row="7" Grid.Column="1"
+                                     Name="CountTextBox"
+                                     Width="52"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"
+                                     Text="1"
+                                     Margin="0,0,0,8" />
 
-                                    <Label Grid.Row="8" Grid.Column="0" VerticalAlignment="Top">Preview</Label>
-                                    <Border Grid.Row="8" Grid.Column="1" BorderBrush="Black" BorderThickness="1" Width="300" Height="200" HorizontalAlignment="Left" Background="White">
-                                        <Canvas Name="PreviewCanvas" Background="White" />
-                                    </Border>
-
-                                    <Button Grid.Row="9" Grid.Column="1" Name="GeneratePrintButton" Content="Generate and Print" HorizontalAlignment="Left" Padding="8,4" Margin="0,12,0,0" Click="GeneratePrintButton_Click" />
-                                </Grid>
-                            </ScrollViewer>
-                        </TabItem>
-
-                        <TabItem Header="Raw ZPL">
-                            <StackPanel Margin="6">
-                                <TextBox Name="RawZplTextBox" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Width="560" Height="220" />
-                                <Button Name="SendRawZplButton" Content="Send Raw ZPL" HorizontalAlignment="Left" Padding="8,4" Margin="0,8,0,0" Click="SendRawZplButton_Click" />
+                            <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,4,0,0">
+                                <Button Name="GeneratePrintButton"
+                                        Content="Generate and print"
+                                        MinWidth="130"
+                                        Padding="10,4"
+                                        IsDefault="True"
+                                        Click="GeneratePrintButton_Click" />
                             </StackPanel>
-                        </TabItem>
-                    </TabControl>
-                </Grid>
-            </GroupBox>
-        </StackPanel>
+                        </Grid>
+                    </TabItem>
 
-        <!-- Status bar -->
-        <Border Grid.Row="2" Padding="6,6,6,6">
-            <Grid MaxWidth="720" HorizontalAlignment="Center">
-                <Label Name="StatusLabel" Content="Ready" VerticalAlignment="Center" />
-            </Grid>
-        </Border>
-    </Grid>
+                    <TabItem Header="Raw ZPL" Padding="6,4">
+                        <Grid Margin="10,8,10,10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" MinHeight="140" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBox Grid.Row="0"
+                                     Name="RawZplTextBox"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     FontFamily="Consolas"
+                                     FontSize="11"
+                                     Margin="0,0,0,10" />
+                            <Button Grid.Row="1"
+                                    Name="SendRawZplButton"
+                                    Content="Send raw ZPL"
+                                    HorizontalAlignment="Right"
+                                    MinWidth="110"
+                                    Padding="10,4"
+                                    Click="SendRawZplButton_Click" />
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+            </GroupBox>
+        </Grid>
+    </DockPanel>
 </Window>

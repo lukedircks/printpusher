@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Shapes;
 
 namespace PrintPusher
 {
@@ -17,7 +14,6 @@ namespace PrintPusher
         public MainWindow()
         {
             InitializeComponent();
-            Loaded += (_, _) => UpdatePreviewAndZpl();
         }
 
         private async void TestConnectionButton_Click(object sender, RoutedEventArgs e)
@@ -234,177 +230,17 @@ namespace PrintPusher
         {
             _currentRotation = (_currentRotation - 90 + 360) % 360;
             UpdateRotationLabel();
-            UpdatePreviewAndZpl();
         }
 
         private void RotateRightButton_Click(object sender, RoutedEventArgs e)
         {
             _currentRotation = (_currentRotation + 90) % 360;
             UpdateRotationLabel();
-            UpdatePreviewAndZpl();
         }
 
         private void UpdateRotationLabel()
         {
             RotationLabel.Content = $"Rotation: {_currentRotation}°";
-        }
-
-        private void UpdatePreviewAndZpl()
-        {
-            // TextChanged can fire while XAML is still initializing controls.
-            if (!IsLoaded || PreviewCanvas == null || RawZplTextBox == null)
-                return;
-
-            try
-            {
-                var widthText = WidthTextBox?.Text?.Trim() ?? string.Empty;
-                var heightText = HeightTextBox?.Text?.Trim() ?? string.Empty;
-                var barcodeInput = BarcodeTextBox?.Text?.Trim() ?? string.Empty;
-                var textInput = TextTextBox?.Text?.Trim() ?? string.Empty;
-
-                // Try to parse dimensions
-                if (!double.TryParse(widthText, out var widthInches) || widthInches <= 0)
-                {
-                    PreviewCanvas.Children.Clear();
-                    return;
-                }
-
-                if (!double.TryParse(heightText, out var heightInches) || heightInches <= 0)
-                {
-                    PreviewCanvas.Children.Clear();
-                    return;
-                }
-
-                // Convert inches to dots @203 dpi
-                const double dpi = 203.0;
-                var widthDots = (int)(widthInches * dpi);
-                var heightDots = (int)(heightInches * dpi);
-
-                // Generate ZPL
-                string zpl = GenerateBuilderZpl(barcodeInput, textInput, widthDots, heightDots, _currentRotation);
-                RawZplTextBox.Text = zpl;
-
-                // Draw preview
-                DrawPreview(widthInches, heightInches, _currentRotation);
-            }
-            catch
-            {
-                PreviewCanvas?.Children.Clear();
-            }
-        }
-
-        private void DrawPreview(double widthInches, double heightInches, int rotation)
-        {
-            PreviewCanvas.Children.Clear();
-
-            if (widthInches <= 0 || heightInches <= 0)
-                return;
-
-            // Scale to fit canvas
-            var canvasWidth = PreviewCanvas.ActualWidth > 0 ? PreviewCanvas.ActualWidth : 300;
-            var canvasHeight = PreviewCanvas.ActualHeight > 0 ? PreviewCanvas.ActualHeight : 200;
-
-            double scaleWidth = canvasWidth / widthInches;
-            double scaleHeight = canvasHeight / heightInches;
-            double scale = Math.Min(scaleWidth, scaleHeight) * 0.9; // 90% to leave margin
-
-            double displayWidth = widthInches * scale;
-            double displayHeight = heightInches * scale;
-
-            // Center in canvas
-            double offsetX = (canvasWidth - displayWidth) / 2;
-            double offsetY = (canvasHeight - displayHeight) / 2;
-
-            // Draw label border
-            var labelRect = new Rectangle
-            {
-                Width = displayWidth,
-                Height = displayHeight,
-                Stroke = Brushes.Black,
-                StrokeThickness = 1,
-                Fill = Brushes.White
-            };
-            Canvas.SetLeft(labelRect, offsetX);
-            Canvas.SetTop(labelRect, offsetY);
-            PreviewCanvas.Children.Add(labelRect);
-
-            // Calculate content area (with padding)
-            double padPercent = 0.08; // 8% padding
-            double contentX = offsetX + displayWidth * padPercent;
-            double contentY = offsetY + displayHeight * padPercent;
-            double contentWidth = displayWidth * (1 - 2 * padPercent);
-            double contentHeight = displayHeight * (1 - 2 * padPercent);
-
-            // Draw approximate barcode area (70% of content)
-            double barcodeHeight = contentHeight * 0.7;
-            var barcodeRect = new Rectangle
-            {
-                Width = contentWidth,
-                Height = barcodeHeight,
-                Stroke = Brushes.Gray,
-                StrokeThickness = 1,
-                Fill = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)) // Light gray fill
-            };
-            Canvas.SetLeft(barcodeRect, contentX);
-            Canvas.SetTop(barcodeRect, contentY);
-            PreviewCanvas.Children.Add(barcodeRect);
-
-            // Add barcode label
-            var barcodeLabel = new TextBlock
-            {
-                Text = "Barcode",
-                FontSize = 10,
-                Foreground = Brushes.Gray
-            };
-            Canvas.SetLeft(barcodeLabel, contentX + 4);
-            Canvas.SetTop(barcodeLabel, contentY + 4);
-            PreviewCanvas.Children.Add(barcodeLabel);
-
-            // Draw approximate text area (below barcode)
-            double textY = contentY + barcodeHeight + 5;
-            double textHeight = contentHeight * 0.25;
-            var textRect = new Rectangle
-            {
-                Width = contentWidth,
-                Height = textHeight,
-                Stroke = Brushes.Gray,
-                StrokeThickness = 1,
-                Fill = new SolidColorBrush(Color.FromArgb(20, 0, 0, 0)) // Very light gray fill
-            };
-            Canvas.SetLeft(textRect, contentX);
-            Canvas.SetTop(textRect, textY);
-            PreviewCanvas.Children.Add(textRect);
-
-            // Add text label
-            var textLabel = new TextBlock
-            {
-                Text = "Text",
-                FontSize = 10,
-                Foreground = Brushes.Gray
-            };
-            Canvas.SetLeft(textLabel, contentX + 4);
-            Canvas.SetTop(textLabel, textY + 4);
-            PreviewCanvas.Children.Add(textLabel);
-
-            // Draw rotation indicator if not 0°
-            if (rotation != 0)
-            {
-                var rotLabel = new TextBlock
-                {
-                    Text = $"{rotation}°",
-                    FontSize = 12,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = Brushes.Blue
-                };
-                Canvas.SetLeft(rotLabel, offsetX + displayWidth - 40);
-                Canvas.SetTop(rotLabel, offsetY + 5);
-                PreviewCanvas.Children.Add(rotLabel);
-            }
-        }
-
-        private void InputChanged(object sender, TextChangedEventArgs e)
-        {
-            UpdatePreviewAndZpl();
         }
 
         private string EscapeZpl(string input)
