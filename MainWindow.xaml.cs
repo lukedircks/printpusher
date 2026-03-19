@@ -314,64 +314,130 @@ namespace PrintPusher
         }
 
         /// <summary>
-        /// Builds ZPL for one label: Code 128 + one text line (same as barcode value).
-        /// Rotation is applied per element via ^BC and ^A0 orientation (no global ^FW).
+        /// Proportional layout regions for one label (all values in dots).
+        /// Same layout model for portrait (tall) and landscape (wide); only proportions vary slightly.
         /// </summary>
-        private static string GenerateBuilderZpl(string barcodeValue, int widthDots, int heightDots, int rotation)
+        private sealed class LabelLayout
         {
-            var humanReadable = barcodeValue;
-            char orientation = GetZplOrientationForRotation(rotation);
+            public int WidthDots { get; init; }
+            public int HeightDots { get; init; }
+            public bool IsPortrait { get; init; }
+            public int OuterPadding { get; init; }
+            public int UsableWidth { get; init; }
+            public int UsableHeight { get; init; }
+            public int BarcodeRegionWidth { get; init; }
+            public int BarcodeRegionHeight { get; init; }
+            public int BarcodeX { get; init; }
+            public int BarcodeY { get; init; }
+            public int GapBetweenBarcodeAndText { get; init; }
+            public int TextY { get; init; }
+            public int TextHeightDots { get; init; }
+            public int TextWidthDots { get; init; }
+            public int ModuleWidth { get; init; }
+        }
 
+        /// <summary>
+        /// 1) Get preset dimensions and determine portrait vs landscape from width/height.
+        /// </summary>
+        private static (int widthDots, int heightDots, bool isPortrait) GetDimensionsAndStyle(int widthDots, int heightDots)
+        {
+            bool isPortrait = heightDots > widthDots; // portrait = tall label; landscape = wide or square
+            return (widthDots, heightDots, isPortrait);
+        }
+
+        /// <summary>
+        /// 2) Compute proportional regions from canvas size; one consistent model for all presets.
+        /// </summary>
+        private static LabelLayout ComputeProportionalLayout(int widthDots, int heightDots, bool isPortrait)
+        {
+            int minDimension = Math.Min(widthDots, heightDots);
+
+            // Outer padding: about 5% of the smaller label dimension
+            int outerPadding = Math.Max(10, (int)(0.05 * minDimension));
+            int usableWidth = widthDots - 2 * outerPadding;
+            int usableHeight = heightDots - 2 * outerPadding;
+
+            // Barcode region: centered, ~80% of usable width, ~55–65% of usable height (portrait vs landscape)
+            double barcodeHeightRatio = isPortrait ? 0.60 : 0.58;
+            int barcodeRegionWidth = (int)(0.80 * usableWidth);
+            int barcodeRegionHeight = (int)(barcodeHeightRatio * usableHeight);
+            int barcodeX = outerPadding + (usableWidth - barcodeRegionWidth) / 2;
+            int barcodeY = outerPadding;
+
+            // Breathing room between barcode and text: ~3% of label height
+            int gapBetweenBarcodeAndText = Math.Max(4, (int)(0.03 * heightDots));
+            // Text region: shallow band below barcode; font height ~10% of label height (8–12% band)
+            int textHeightDots = Math.Max(12, (int)(0.10 * heightDots));
+            int textWidthDots = Math.Max(8, (int)(0.08 * minDimension)); // character width in dots
+            int textY = barcodeY + barcodeRegionHeight + gapBetweenBarcodeAndText;
+
+            // Module width for ^BY: scale with label so barcode bars are not too thick or thin
+            int moduleWidth = Math.Clamp((int)(minDimension / 120), 1, 4);
+
+            return new LabelLayout
+            {
+                WidthDots = widthDots,
+                HeightDots = heightDots,
+                IsPortrait = isPortrait,
+                OuterPadding = outerPadding,
+                UsableWidth = usableWidth,
+                UsableHeight = usableHeight,
+                BarcodeRegionWidth = barcodeRegionWidth,
+                BarcodeRegionHeight = barcodeRegionHeight,
+                BarcodeX = barcodeX,
+                BarcodeY = barcodeY,
+                GapBetweenBarcodeAndText = gapBetweenBarcodeAndText,
+                TextY = textY,
+                TextHeightDots = textHeightDots,
+                TextWidthDots = textWidthDots,
+                ModuleWidth = moduleWidth
+            };
+        }
+
+        /// <summary>
+        /// 3) Build ZPL from layout and content; uses explicit ^BCo and ^A0o (no global ^FW).
+        /// </summary>
+        private static string BuildZplFromLayout(string barcodeValue, LabelLayout layout, char orientation)
+        {
+            string humanReadable = barcodeValue;
             var b = new StringBuilder();
+
             b.AppendLine("^XA");
+            b.AppendLine($"^PW{layout.WidthDots}");
+            b.AppendLine($"^LL{layout.HeightDots}");
 
-            b.AppendLine($"^PW{widthDots}");
-            b.AppendLine($"^LL{heightDots}");
+            // Barcode: module width then Code 128 with explicit orientation and height
+            b.AppendLine($"^BY{layout.ModuleWidth},2,1");
+            b.AppendLine($"^FO{layout.BarcodeX},{layout.BarcodeY}");
+            b.AppendLine($"^BC{orientation},{layout.BarcodeRegionHeight},N,N,N");
+            b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
 
-            const int padding = 20;
-            var usableWidth = widthDots - 2 * padding;
-            var usableHeight = heightDots - 2 * padding;
-            var isWide = widthDots > heightDots;
-
-            // Barcode and text use explicit orientation (^BCo, ^A0o); no global ^FW.
-            if (isWide)
-            {
-                var barcodeWidth = (int)(usableWidth * 0.65);
-                var barcodeHeight = usableHeight - 40;
-                var barcodeX = padding;
-                var barcodeY = padding + 20;
-
-                b.AppendLine($"^FO{barcodeX},{barcodeY}");
-                b.AppendLine($"^BC{orientation},{barcodeHeight},N,N,N");
-                b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
-
-                var textX = padding + barcodeWidth + 10;
-                var textY = padding;
-
-                b.AppendLine($"^FO{textX},{textY}");
-                b.AppendLine($"^A0{orientation},24,20");
-                b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
-            }
-            else
-            {
-                var barcodeHeight = (int)(usableHeight * 0.65);
-                var barcodeX = padding;
-                var barcodeY = padding;
-
-                b.AppendLine($"^FO{barcodeX},{barcodeY}");
-                b.AppendLine($"^BC{orientation},{barcodeHeight},N,N,N");
-                b.AppendLine($"^FD{EscapeZpl(barcodeValue)}^FS");
-
-                var textX = padding;
-                var textY = padding + barcodeHeight + 15;
-
-                b.AppendLine($"^FO{textX},{textY}");
-                b.AppendLine($"^A0{orientation},20,18");
-                b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
-            }
+            // Text: centered in a block under the barcode; font size proportional to label
+            b.AppendLine($"^FO{layout.BarcodeX},{layout.TextY}");
+            b.AppendLine($"^FB{layout.BarcodeRegionWidth},1,0,0,C");
+            b.AppendLine($"^A0{orientation},{layout.TextHeightDots},{layout.TextWidthDots}");
+            b.AppendLine($"^FD{EscapeZpl(humanReadable)}^FS");
 
             b.AppendLine("^XZ");
             return b.ToString();
+        }
+
+        /// <summary>
+        /// Builds ZPL for one label: proportional layout, one Code 128 barcode + one text line (same as barcode value).
+        /// Rotation applied per element via ^BCo and ^A0o only.
+        /// </summary>
+        private static string GenerateBuilderZpl(string barcodeValue, int widthDots, int heightDots, int rotation)
+        {
+            char orientation = GetZplOrientationForRotation(rotation);
+
+            // Step 1: dimensions and portrait vs landscape
+            var (_, _, isPortrait) = GetDimensionsAndStyle(widthDots, heightDots);
+
+            // Step 2: proportional regions (same rules for all preset sizes)
+            LabelLayout layout = ComputeProportionalLayout(widthDots, heightDots, isPortrait);
+
+            // Step 3: build ZPL
+            return BuildZplFromLayout(barcodeValue, layout, orientation);
         }
 
         private async Task<(bool Success, string Message)> SendZplToPrinterAsync(string zpl)
